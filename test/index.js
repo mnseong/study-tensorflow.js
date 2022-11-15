@@ -1,7 +1,6 @@
 const tf = require("@tensorflow/tfjs-node");
 
 // Optional Load the binding:
-// Use '@tensorflow/tfjs-node-gpu' if running with GPU.
 require("@tensorflow/tfjs-node");
 
 // Train a simple model:
