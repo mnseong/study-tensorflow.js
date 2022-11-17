@@ -127,6 +127,21 @@ const run = async () => {
     xLabel: "Age",
     yLabel: "Age(years)",
   });
+  renderScatter(data, "scatter-glucose-age-cont", ["Glucose", "Age"], {
+    title: "Glucose vs Age",
+    xLabel: "Glucose",
+    yLabel: "Age",
+  });
+  renderScatter(
+    data,
+    "scatter-skinthickness-bmi-cont",
+    ["SkinThickness", "BMI"],
+    {
+      title: "SkinThickness vs BMI",
+      xLabel: "SkinThickness",
+      yLabel: "BMI",
+    }
+  );
 };
 
 if (document.readyState !== "loading") {
