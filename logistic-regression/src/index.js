@@ -1,3 +1,4 @@
+import * as tf from "@tensorflow/tfjs";
 import * as Papa from "papaparse";
 import Plotly from "plotly.js-dist";
 import _ from "lodash";
@@ -107,10 +108,45 @@ const renderScatter = (data, container, columns, config) => {
   });
 };
 
+const oneHot = (outcome) => Array.from(tf.oneHot([outcome], 2).dataSync());
+
+const createDatasets = (data, features, testSize, batchSize) => {
+  const X = data.map((r) =>
+    features.map((f) => {
+      const val = r[f];
+      return val === undefined ? 0 : val;
+    })
+  );
+  const y = data.map((r) => {
+    const outcome = r.Outcome === undefined ? 0 : r.Outcome;
+    return oneHot(outcome);
+  });
+  const splitIdx = parseInt((1 - testSize) * data.length, 10);
+
+  const ds = tf.data
+    .zip({
+      xs: tf.data.array(X),
+      ys: tf.data.array(y),
+    })
+    .shuffle(data.length, 42);
+
+  return [
+    ds.take(splitIdx).batch(batchSize),
+    ds.skip(splitIdx + 1).batch(batchSize),
+  ];
+};
+
 const run = async () => {
   const data = await loadData();
-  console.log(data);
-  renderPieChart(data);
+
+  const [trainDs, validDs] = createDatasets(data, ["BMI"], 0.1, 16);
+
+  const trainVals = trainDs.take(10);
+  await trainVals.forEachAsync((e) => console.log(e));
+
+  // console.log(data);
+  // console.log(data[0]);
+  // renderPieChart(data);
   renderHistogram(data, "histogram-insulin-cont", "Insulin", {
     title: "Insulin levels",
     xLabel: "2-Hour serum insulin (mu U/ml)",
@@ -142,6 +178,8 @@ const run = async () => {
       yLabel: "BMI",
     }
   );
+
+  // tf.oneHot([1], 2).print();
 };
 
 if (document.readyState !== "loading") {
