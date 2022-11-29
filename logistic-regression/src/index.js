@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs";
+import * as tfvis from "@tensorflow/tfjs-vis";
 import * as Papa from "papaparse";
 import Plotly from "plotly.js-dist";
 import _ from "lodash";
@@ -136,50 +137,81 @@ const createDatasets = (data, features, testSize, batchSize) => {
   ];
 };
 
+const trainLogisticRegression = async (featureCount, trainDs, validDs) => {
+  const model = tf.sequential();
+  model.add(
+    tf.layers.dense({
+      units: 2,
+      activation: "softmax",
+      inputShape: [featureCount],
+    })
+  );
+  model.compile({
+    optimizer: tf.train.adam(0.001),
+    loss: "binaryCrossentropy",
+    metrics: ["accuracy"],
+  });
+  const trainLogs = [];
+  const lossContainer = document.getElementById("loss-cont");
+  const accContainer = document.getElementById("acc-cont");
+  await model.fitDataset(trainDs, {
+    epochs: 100,
+    validationData: validDs,
+    callbacks: {
+      onEpochEnd: async (epoch, logs) => {
+        trainLogs.push(logs);
+        tfvis.show.history(lossContainer, trainLogs, ["loss", "val_loss"]);
+        tfvis.show.history(accContainer, trainLogs, ["acc", "val_acc"]);
+      },
+    },
+  });
+  return model;
+};
+
 const run = async () => {
   const data = await loadData();
 
-  const [trainDs, validDs] = createDatasets(data, ["BMI"], 0.1, 16);
+  const [trainDs, validDs] = createDatasets(data, ["Glucose"], 0.1, 16);
+  const model = await trainLogisticRegression(1, trainDs, validDs);
 
-  const trainVals = trainDs.take(10);
-  await trainVals.forEachAsync((e) => console.log(e));
+  console.log("Done training");
+  // const trainVals = trainDs.take(10);
+  // await trainVals.forEachAsync((e) => console.log(e));
 
   // console.log(data);
   // console.log(data[0]);
   // renderPieChart(data);
-  renderHistogram(data, "histogram-insulin-cont", "Insulin", {
-    title: "Insulin levels",
-    xLabel: "2-Hour serum insulin (mu U/ml)",
-    yLabel: "Count",
-  });
-  renderHistogram(data, "histogram-glucose-cont", "Glucose", {
-    title: "Glucose concentration",
-    xLabel:
-      "Plasma glucose concentration a 2 hours in an oral glucose tolerance test",
-    yLabel: "Count",
-  });
-  renderHistogram(data, "histogram-age-cont", "Age", {
-    title: "Age",
-    xLabel: "Age",
-    yLabel: "Age(years)",
-  });
-  renderScatter(data, "scatter-glucose-age-cont", ["Glucose", "Age"], {
-    title: "Glucose vs Age",
-    xLabel: "Glucose",
-    yLabel: "Age",
-  });
-  renderScatter(
-    data,
-    "scatter-skinthickness-bmi-cont",
-    ["SkinThickness", "BMI"],
-    {
-      title: "SkinThickness vs BMI",
-      xLabel: "SkinThickness",
-      yLabel: "BMI",
-    }
-  );
-
-  // tf.oneHot([1], 2).print();
+  // renderHistogram(data, "histogram-insulin-cont", "Insulin", {
+  //   title: "Insulin levels",
+  //   xLabel: "2-Hour serum insulin (mu U/ml)",
+  //   yLabel: "Count",
+  // });
+  // renderHistogram(data, "histogram-glucose-cont", "Glucose", {
+  //   title: "Glucose concentration",
+  //   xLabel:
+  //     "Plasma glucose concentration a 2 hours in an oral glucose tolerance test",
+  //   yLabel: "Count",
+  // });
+  // renderHistogram(data, "histogram-age-cont", "Age", {
+  //   title: "Age",
+  //   xLabel: "Age",
+  //   yLabel: "Age(years)",
+  // });
+  // renderScatter(data, "scatter-glucose-age-cont", ["Glucose", "Age"], {
+  //   title: "Glucose vs Age",
+  //   xLabel: "Glucose",
+  //   yLabel: "Age",
+  // });
+  // renderScatter(
+  //   data,
+  //   "scatter-skinthickness-bmi-cont",
+  //   ["SkinThickness", "BMI"],
+  //   {
+  //     title: "SkinThickness vs BMI",
+  //     xLabel: "SkinThickness",
+  //     yLabel: "BMI",
+  //   }
+  // );
 };
 
 if (document.readyState !== "loading") {
